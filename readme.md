@@ -18,13 +18,13 @@ A powerful command-line tool that analyzes HTML files for SVG optimization oppor
 ### Global Installation (Recommended)
 
 ```bash
-npm install -g svg-opti-detector
+pnpm install -g svg-opti-detector
 ```
 
 ### Local Installation
 
 ```bash
-npm install svg-opti-detector
+pnpm install svg-opti-detector
 ```
 
 ### From Source
@@ -32,7 +32,7 @@ npm install svg-opti-detector
 ```bash
 git clone https://github.com/bobharing/svg-opti-detector.git
 cd svg-opti-detector
-npm install
+pnpm install
 ```
 
 ## Usage

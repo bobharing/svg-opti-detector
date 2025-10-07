@@ -7,7 +7,7 @@
     "svg-opti-detector": "./svg-opti-detector.js"
   },
   "engines": {
-    "node": ">=16.0.0"
+    "node": ">=24.0.0"
   },
   "scripts": {
     "start": "node svg-opti-detector.js",
