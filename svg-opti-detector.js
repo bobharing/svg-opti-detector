@@ -403,4 +403,19 @@ async function main() {
   }
 }
 
-main().catch(e => { console.error('UNCAUGHT ERROR:', e); });
+// Export functions for testing
+module.exports = {
+  fetchHtml,
+  extractInlineSvgs,
+  hashSvg,
+  processSvgBatch,
+  analyzeSvgs,
+  generateIdentifierString,
+  formatBytes,
+  main
+};
+
+// Only run main if this file is executed directly
+if (require.main === module) {
+  main().catch(console.error);
+}

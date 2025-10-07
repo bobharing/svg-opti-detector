@@ -1,0 +1,11 @@
+{
+  "testEnvironment": "node",
+  "testMatch": ["**/test/**/*.test.js"],
+  "collectCoverageFrom": [
+    "svg-opti-detector.js",
+    "!**/node_modules/**"
+  ],
+  "coverageDirectory": "coverage",
+  "verbose": true
+}
+

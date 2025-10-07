@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SVG Test Page - With Classes and Duplicates</title>
+</head>
+<body>
+    <h1>SVG Test Page with Classes and Duplicates</h1>
+    
+    <!-- Star icon - first occurrence -->
+    <svg class="icon star-icon" width="24" height="24" viewBox="0 0 24 24">
+        <title>Star Rating</title>
+        <desc>A star for rating</desc>
+        <path d="M12 2l3.09 6.26L22 9.27l-5 4.87L18.18 22 12 18.77 5.82 22 7 14.14l-5-4.87 6.91-1.01L12 2z" fill="gold"/>
+    </svg>
+    
+    <!-- Heart icon -->
+    <svg class="icon heart-icon" id="heart-1" width="24" height="24" viewBox="0 0 24 24">
+        <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" fill="red"/>
+    </svg>
+    
+    <!-- Star icon - DUPLICATE with different class -->
+    <svg class="icon star-filled" width="24" height="24" viewBox="0 0 24 24">
+        <title>Star Rating</title>
+        <desc>A star for rating</desc>
+        <path d="M12 2l3.09 6.26L22 9.27l-5 4.87L18.18 22 12 18.77 5.82 22 7 14.14l-5-4.87 6.91-1.01L12 2z" fill="gold"/>
+    </svg>
+    
+    <!-- Arrow icon -->
+    <svg class="icon arrow-right" width="16" height="16" viewBox="0 0 16 16">
+        <path d="M4.646 1.646a.5.5 0 0 1 .708 0l6 6a.5.5 0 0 1 0 .708l-6 6a.5.5 0 0 1-.708-.708L10.293 8 4.646 2.354a.5.5 0 0 1 0-.708z" fill="currentColor"/>
+    </svg>
+    
+    <!-- Heart icon - DUPLICATE with different class -->
+    <svg class="icon heart-solid" id="heart-2" width="24" height="24" viewBox="0 0 24 24">
+        <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" fill="red"/>
+    </svg>
+    
+    <!-- Star icon - ANOTHER DUPLICATE with no class -->
+    <svg width="24" height="24" viewBox="0 0 24 24">
+        <title>Star Rating</title>
+        <desc>A star for rating</desc>
+        <path d="M12 2l3.09 6.26L22 9.27l-5 4.87L18.18 22 12 18.77 5.82 22 7 14.14l-5-4.87 6.91-1.01L12 2z" fill="gold"/>
+    </svg>
+    
+    <!-- Unoptimized SVG with lots of unnecessary content -->
+    <svg class="large-svg" width="100" height="100" viewBox="0 0 100 100">
+        <title>Complex Shape</title>
+        <desc>This SVG has lots of unnecessary metadata and could be optimized</desc>
+        <metadata>
+            <rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">
+                <cc:Work rdf:about="">
+                    <dc:format>image/svg+xml</dc:format>
+                    <dc:type rdf:resource="http://purl.org/dc/dcmitype/StillImage" />
+                </cc:Work>
+            </rdf:RDF>
+        </metadata>
+        <defs>
+            <linearGradient id="grad1" x1="0%" y1="0%" x2="100%" y2="0%">
+                <stop offset="0%" style="stop-color:rgb(255,255,0);stop-opacity:1" />
+                <stop offset="100%" style="stop-color:rgb(255,0,0);stop-opacity:1" />
+            </linearGradient>
+        </defs>
+        <rect x="20" y="20" width="60" height="60" fill="url(#grad1)" stroke="black" stroke-width="2"/>
+        <!-- This rectangle could be optimized -->
+    </svg>
+</body>
+</html>
+
