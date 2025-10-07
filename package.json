@@ -1,0 +1,68 @@
+{
+  "name": "svg-opti-detector",
+  "version": "1.0.0",
+  "description": "A powerful Node.js tool to analyze, optimize, and detect duplicate inline SVGs in HTML from URLs or local files. Provides detailed optimization reports with color-coded output and potential file size savings.",
+  "main": "svg-opti-detector.js",
+  "bin": {
+    "svg-opti-detector": "./svg-opti-detector.js"
+  },
+  "engines": {
+    "node": ">=16.0.0"
+  },
+  "scripts": {
+    "start": "node svg-opti-detector.js",
+    "test": "node svg-opti-detector.js test-svgs-with-classes.html",
+    "test-duplicates": "node svg-opti-detector.js test-svgs-with-classes.html --duplicates"
+  },
+  "keywords": [
+    "svg",
+    "optimization",
+    "html",
+    "analysis",
+    "duplicate-detection",
+    "web-performance",
+    "file-size",
+    "svgo",
+    "cli-tool",
+    "optimization-report"
+  ],
+  "author": {
+    "name": "Bob Haring",
+    "email": "bob.haring@hotmail.com"
+  },
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/bobharing/svg-opti-detector.git"
+  },
+  "bugs": {
+    "url": "https://github.com/bobharing/svg-opti-detector/issues"
+  },
+  "homepage": "https://github.com/bobharing/svg-opti-detector#readme",
+  "usage": {
+    "basic": "node svg-opti-detector.js <url-or-file-path>",
+    "with-duplicates": "node svg-opti-detector.js <url-or-file-path> --duplicates",
+    "examples": [
+      "node svg-opti-detector.js https://example.com",
+      "node svg-opti-detector.js ./my-page.html",
+      "node svg-opti-detector.js https://example.com --duplicates",
+      "node svg-opti-detector.js ./my-page.html -d"
+    ]
+  },
+  "features": [
+    "Analyze inline SVGs from URLs or local HTML files",
+    "Calculate original vs optimized file sizes using SVGO",
+    "Color-coded optimization status (red=needs optimization, yellow=moderate, green=good)",
+    "Optional duplicate SVG detection with class name reporting",
+    "Support for SVG identification via class, id, width, height, and viewBox attributes",
+    "Clean, formatted console output with emojis and progress indicators",
+    "Compatible with Node.js 16+ and native fetch API"
+  ],
+  "dependencies": {
+    "chalk": "^4.1.2",
+    "cheerio": "^1.1.2",
+    "svgo": "^4.0.0"
+  },
+  "devDependencies": {},
+  "preferGlobal": true
+}

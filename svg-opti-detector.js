@@ -1,0 +1,406 @@
+#!/usr/bin/env node
+
+const cheerio = require('cheerio');
+const { optimize } = require('svgo');
+const crypto = require('crypto');
+const fs = require('fs');
+const path = require('path');
+
+// Chalk fallback implementation
+let chalk;
+try {
+  chalk = require('chalk');
+} catch (error) {
+  // Fallback if chalk is not available
+  const noColor = (text) => text;
+  chalk = {
+    blue: { bold: noColor },
+    green: noColor,
+    cyan: noColor,
+    yellow: noColor,
+    red: Object.assign(noColor, { bold: noColor }),
+    gray: noColor
+  };
+}
+
+// Performance optimization: Pre-configure SVGO with common optimizations
+const svgoConfig = {
+  multipass: true,
+  plugins: [
+    'preset-default',
+    'removeDimensions',
+    'removeComments',
+    'removeMetadata',
+    'removeEditorsNSData'
+  ]
+};
+
+console.log(chalk.blue.bold('🔍 SVG Opti Detector script started.\n'));
+
+async function fetchHtml(input) {
+  // Improved detection: treat anything not starting with http:// or https:// as a file
+  if (/^https?:\/\//i.test(input)) {
+    const response = await fetch(input);
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+    return await response.text();
+  } else {
+    // Support file:// and direct file paths
+    let filePath = input;
+    if (filePath.startsWith('file://')) {
+      filePath = filePath.replace('file://', '');
+    }
+    filePath = path.resolve(filePath);
+    console.log(chalk.green('Reading local file:'), filePath);
+    return fs.readFileSync(filePath, 'utf8');
+  }
+}
+
+function extractInlineSvgs(html) {
+  const $ = cheerio.load(html, {
+    // Performance optimization: Disable unnecessary parsing features
+    xmlMode: false,
+    decodeEntities: false,
+    lowerCaseAttributeNames: false
+  });
+  
+  const svgs = [];
+  const svgElements = $('svg');
+  
+  // Performance optimization: Use faster iteration
+  for (let i = 0; i < svgElements.length; i++) {
+    const el = svgElements[i];
+    const $el = $(el);
+    const svgHtml = $.html(el);
+    
+    // Extract identifying attributes
+    const attributes = {
+      class: $el.attr('class') || null,
+      id: $el.attr('id') || null,
+      width: $el.attr('width') || null,
+      height: $el.attr('height') || null,
+      viewBox: $el.attr('viewBox') || null
+    };
+    
+    svgs.push({
+      html: svgHtml,
+      attributes: attributes
+    });
+  }
+  
+  return svgs;
+}
+
+// Performance optimization: Use faster hashing
+function hashSvg(svg) {
+  // Normalize SVG content by removing class attributes for duplicate detection
+  // This allows identical SVGs with different classes to be detected as duplicates
+  const normalizedSvg = svg.replace(/\s+class="[^"]*"/g, '').replace(/\s+class='[^']*'/g, '');
+  return crypto.createHash('md5').update(normalizedSvg).digest('hex');
+}
+
+// Performance optimization: Process SVGs in parallel with controlled concurrency
+async function processSvgBatch(svgBatch, startIndex) {
+  const results = await Promise.all(
+    svgBatch.map(async (svg, batchIndex) => {
+      const index = startIndex + batchIndex;
+      const originalSize = Buffer.byteLength(svg.html, 'utf8');
+      
+      try {
+        const optimized = optimize(svg.html, svgoConfig);
+        const optimizedSize = Buffer.byteLength(optimized.data, 'utf8');
+        const hash = hashSvg(svg.html);
+        
+        return {
+          index,
+          originalSize,
+          optimizedSize,
+          hash,
+          isDuplicate: false
+        };
+      } catch (error) {
+        // Fallback if optimization fails
+        console.warn(`Warning: Failed to optimize SVG #${index}: ${error.message}`);
+        return {
+          index,
+          originalSize,
+          optimizedSize: originalSize,
+          hash: hashSvg(svg.html),
+          isDuplicate: false
+        };
+      }
+    })
+  );
+  
+  return results;
+}
+
+async function analyzeSvgs(svgs) {
+  let totalOriginalSize = 0;
+  let totalOptimizedSize = 0;
+  const svgStats = [];
+  const hashMap = new Map(); // Performance optimization: Use Map instead of object
+  const duplicates = {};
+  
+  // Performance optimization: Process SVGs in batches of 10 for controlled concurrency
+  const batchSize = 10;
+  const batches = [];
+  
+  for (let i = 0; i < svgs.length; i += batchSize) {
+    batches.push(svgs.slice(i, i + batchSize));
+  }
+  
+  // Process batches sequentially to avoid overwhelming the system
+  for (let batchIndex = 0; batchIndex < batches.length; batchIndex++) {
+    const batch = batches[batchIndex];
+    const startIndex = batchIndex * batchSize;
+    
+    const batchResults = await processSvgBatch(batch, startIndex);
+    
+    // Process results and detect duplicates
+    batchResults.forEach(result => {
+      totalOriginalSize += result.originalSize;
+      totalOptimizedSize += result.optimizedSize;
+      
+      // Early duplicate detection
+      if (hashMap.has(result.hash)) {
+        result.isDuplicate = true;
+        if (!duplicates[result.hash]) {
+          duplicates[result.hash] = [hashMap.get(result.hash)];
+        }
+        duplicates[result.hash].push(result.index);
+      } else {
+        hashMap.set(result.hash, result.index);
+      }
+      
+      svgStats.push(result);
+    });
+    
+    // Progress indicator for large datasets
+    if (svgs.length > 20) {
+      const progress = Math.round(((batchIndex + 1) / batches.length) * 100);
+      process.stdout.write(`\rProcessing SVGs... ${progress}%`);
+    }
+  }
+  
+  if (svgs.length > 20) {
+    process.stdout.write('\n');
+  }
+  
+  return {
+    totalOriginalSize,
+    totalOptimizedSize,
+    svgStats,
+    duplicates
+  };
+}
+
+// Performance optimization: Cache attribute string generation
+function generateIdentifierString(attrs) {
+  const identifiers = [];
+  
+  if (attrs.class) identifiers.push(`class="${attrs.class}"`);
+  if (attrs.id) identifiers.push(`id="${attrs.id}"`);
+  if (attrs.width) identifiers.push(`width="${attrs.width}"`);
+  if (attrs.height) identifiers.push(`height="${attrs.height}"`);
+  if (attrs.viewBox) identifiers.push(`viewBox="${attrs.viewBox}"`);
+  
+  return identifiers.length > 0 ? ` (${chalk.gray(identifiers.join(', '))})` : '';
+}
+
+// Helper function to format bytes with appropriate units
+function formatBytes(bytes) {
+  if (bytes >= 1024 * 1024) {
+    return `${(bytes / (1024 * 1024)).toFixed(2)} MB (${bytes} bytes)`;
+  } else if (bytes >= 1024) {
+    return `${(bytes / 1024).toFixed(2)} KB (${bytes} bytes)`;
+  }
+  return `${bytes} bytes`;
+}
+
+async function main() {
+  const startTime = Date.now();
+  const args = process.argv.slice(2);
+  const url = args.find(arg => !arg.startsWith('--'));
+  const showDuplicates = args.includes('--duplicates') || args.includes('-d');
+  const sortBySavings = args.includes('--sort-by-savings') || args.includes('-s');
+  
+  if (!url) {
+    console.error(chalk.red('Usage: node svg-opti-detector.js <url or file path> [options]'));
+    console.error(chalk.gray('Options:'));
+    console.error(chalk.gray('  --duplicates, -d        Show duplicate SVG analysis'));
+    console.error(chalk.gray('  --sort-by-savings, -s   Sort SVGs by optimization potential (highest savings first)'));
+    process.exit(1);
+  }
+  
+  try {
+    const html = await fetchHtml(url);
+    const svgs = extractInlineSvgs(html);
+    console.log(chalk.cyan(`Found ${svgs.length} SVG(s) to analyze...\n`));
+    
+    if (svgs.length === 0) {
+      console.log(chalk.yellow('No inline SVGs found.'));
+      return;
+    }
+    
+    const result = await analyzeSvgs(svgs);
+    
+    // Create sorted indices if sorting is requested
+    let displayOrder = Array.from({length: svgs.length}, (_, i) => i);
+    
+    if (sortBySavings) {
+      displayOrder.sort((a, b) => {
+        const savingsA = result.svgStats[a].originalSize - result.svgStats[a].optimizedSize;
+        const savingsB = result.svgStats[b].originalSize - result.svgStats[b].optimizedSize;
+        const percentA = result.svgStats[a].originalSize > 0 ? (savingsA / result.svgStats[a].originalSize) * 100 : 0;
+        const percentB = result.svgStats[b].originalSize > 0 ? (savingsB / result.svgStats[b].originalSize) * 100 : 0;
+        
+        // Sort by percentage savings first, then by absolute savings
+        if (Math.abs(percentA - percentB) > 0.1) {
+          return percentB - percentA; // Higher percentage first
+        }
+        return savingsB - savingsA; // Higher absolute savings first
+      });
+      
+      console.log('\n' + chalk.blue.bold('📋 INDIVIDUAL SVG ANALYSIS (Sorted by Optimization Potential)'));
+    } else {
+      console.log('\n' + chalk.blue.bold('📋 INDIVIDUAL SVG ANALYSIS'));
+    }
+    console.log('─'.repeat(50));
+    
+    // Performance optimization: Pre-calculate all identifier strings
+    const identifierStrings = svgs.map(svg => generateIdentifierString(svg.attributes));
+    
+    displayOrder.forEach((originalIdx, displayIdx) => {
+      const svg = svgs[originalIdx];
+      const identifierStr = identifierStrings[originalIdx];
+      const originalSize = result.svgStats[originalIdx].originalSize;
+      const optimizedSize = result.svgStats[originalIdx].optimizedSize;
+      const savings = originalSize - optimizedSize;
+      const savingsPercent = originalSize > 0 ? ((savings / originalSize) * 100).toFixed(1) : 0;
+      const isDuplicate = result.svgStats[originalIdx].isDuplicate;
+      
+      // Color coding based on optimization potential
+      let statusColor = chalk.green;
+      let statusIcon = '✅';
+      
+      if (savingsPercent >= 20) {
+        statusColor = chalk.red;
+        statusIcon = '🔴';
+      } else if (savingsPercent >= 10) {
+        statusColor = chalk.yellow;
+        statusIcon = '🟡';
+      }
+      
+      const duplicateStr = showDuplicates && isDuplicate ? chalk.red(' [DUPLICATE]') : '';
+      const originalIndexStr = sortBySavings ? chalk.gray(` [Original #${originalIdx}]`) : '';
+      
+      console.log(`${statusIcon} SVG #${originalIdx}${identifierStr}${duplicateStr}${originalIndexStr}`);
+      console.log(`   Original: ${formatBytes(originalSize)} | Optimized: ${formatBytes(optimizedSize)}`);
+      console.log(`   ${statusColor(`Savings: ${formatBytes(savings)}`)}`);
+      console.log('');
+    });
+    
+    if (showDuplicates && Object.keys(result.duplicates).length > 0) {
+      console.log(chalk.red.bold('⚠️  DUPLICATE SVGs DETECTED'));
+      console.log('─'.repeat(50));
+      
+      let totalDuplicateSavings = 0;
+      let totalDuplicateOptimizedSavings = 0;
+      let duplicateGroupCount = 0;
+      
+      for (const [hash, indices] of Object.entries(result.duplicates)) {
+        duplicateGroupCount++;
+        
+        // Get classes for the duplicate group
+        const duplicateClasses = indices.map(idx => {
+          const svgClass = svgs[idx].attributes.class;
+          return svgClass ? `"${svgClass}"` : 'no class';
+        });
+        
+        // Use the first class as the group identifier, or show unique classes
+        const uniqueClasses = [...new Set(duplicateClasses)];
+        const groupIdentifier = uniqueClasses.length === 1 
+          ? uniqueClasses[0] 
+          : uniqueClasses.join(', ');
+        
+        // Calculate savings from removing duplicates (keep first occurrence, remove others)
+        const duplicatesToRemove = indices.slice(1);
+        const originalSavingsFromDuplicates = duplicatesToRemove.reduce((sum, idx) => 
+          sum + result.svgStats[idx].originalSize, 0);
+        const optimizedSavingsFromDuplicates = duplicatesToRemove.reduce((sum, idx) => 
+          sum + result.svgStats[idx].optimizedSize, 0);
+        
+        totalDuplicateSavings += originalSavingsFromDuplicates;
+        totalDuplicateOptimizedSavings += optimizedSavingsFromDuplicates;
+        
+        // Show duplicate group info
+        console.log(`${chalk.red('●')} ${chalk.bold(`Group ${duplicateGroupCount}:`)} ${groupIdentifier}`);
+        console.log(`   Found at indices: [${chalk.yellow(indices.join(', '))}]`);
+        console.log(`   Occurrences: ${chalk.cyan(indices.length)} (${chalk.red(duplicatesToRemove.length)} duplicates)`);
+        console.log(`   Potential savings: ${chalk.green(formatBytes(optimizedSavingsFromDuplicates))}`);
+        console.log('');
+      }
+      
+      console.log(chalk.yellow.bold('💡 DUPLICATE REMOVAL SUMMARY'));
+      console.log('─'.repeat(35));
+      console.log(`${chalk.cyan('Duplicate groups found:')} ${duplicateGroupCount}`);
+      console.log(`${chalk.cyan('Total duplicates to remove:')} ${Object.values(result.duplicates).reduce((sum, indices) => sum + (indices.length - 1), 0)}`);
+      console.log('');
+      
+      // Show both scenarios clearly
+      console.log(chalk.white.bold('📈 DEDUPLICATION SCENARIOS:'));
+      console.log(`${chalk.gray('Original total size (baseline):')} ${formatBytes(result.totalOriginalSize)}`);
+      console.log('');
+      
+      // Calculate sizes after deduplication for both scenarios
+      const sizeAfterDeduplicationOnly = result.totalOriginalSize - totalDuplicateSavings;
+      const sizeAfterOptimizationAndDeduplication = result.totalOptimizedSize - totalDuplicateOptimizedSavings;
+      
+      console.log(`${chalk.blue('Scenario 1 - Deduplication only (no optimization):')}`);
+      console.log(`   Total size after deduplication: ${formatBytes(sizeAfterDeduplicationOnly)}`);
+      console.log(`   Savings from deduplication: ${formatBytes(totalDuplicateSavings)}`);
+      console.log('');
+      
+      console.log(`${chalk.blue('Scenario 2 - Deduplication + optimization:')}`);
+      console.log(`   Total size after both optimizations: ${formatBytes(sizeAfterOptimizationAndDeduplication)}`);
+      console.log(`   Savings from deduplication: ${formatBytes(totalDuplicateOptimizedSavings)}`);
+      console.log('');
+      
+      // Calculate combined savings (optimization + duplicate removal)
+      const totalSavings = result.totalOriginalSize - result.totalOptimizedSize;
+      const combinedSavings = totalSavings + totalDuplicateOptimizedSavings;
+      const finalOptimizedSize = result.totalOptimizedSize - totalDuplicateOptimizedSavings;
+      const combinedSavingsPercent = ((combinedSavings / result.totalOriginalSize) * 100).toFixed(1);
+      
+      console.log(chalk.green.bold('🎯 MAXIMUM SAVINGS POTENTIAL:'));
+      console.log(`${chalk.green('Combined savings (optimization + deduplication):')} ${formatBytes(combinedSavings)} (${combinedSavingsPercent}%)`);
+      console.log(`${chalk.green('Final optimized & deduplicated size:')} ${formatBytes(finalOptimizedSize)}`);
+      console.log('');
+    }
+    
+    console.log(chalk.blue.bold('📊 ANALYSIS RESULTS'));
+    console.log('─'.repeat(50));
+    console.log(chalk.cyan(`Total SVGs found: ${svgs.length}`));
+    console.log(chalk.cyan(`Total original size: ${formatBytes(result.totalOriginalSize)}`));
+    console.log(chalk.cyan(`Total optimized size: ${formatBytes(result.totalOptimizedSize)}`));
+    
+    const totalSavings = result.totalOriginalSize - result.totalOptimizedSize;
+    const totalSavingsPercent = ((totalSavings / result.totalOriginalSize) * 100).toFixed(1);
+    
+    if (totalSavings > 0) {
+      console.log(chalk.green(`Total potential savings: ${formatBytes(totalSavings)}`));
+    }
+    
+    // Performance timing
+    const endTime = Date.now();
+    const executionTime = endTime - startTime;
+    console.log(chalk.gray(`\nExecution time: ${executionTime}ms`));
+    
+  } catch (err) {
+    console.error(chalk.red('Error:'), err.message);
+  }
+}
+
+main().catch(e => { console.error('UNCAUGHT ERROR:', e); });
