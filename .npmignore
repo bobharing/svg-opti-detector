@@ -1,0 +1,26 @@
+# Test files
+test/
+*.test.js
+coverage/
+
+# Development files
+.git/
+.gitignore
+.idea/
+.vscode/
+.DS_Store
+*.log
+
+# CI/CD files
+.github/
+.travis.yml
+.circleci/
+
+# Documentation drafts
+docs/
+examples/
+
+# Development dependencies
+pnpm-lock.yaml
+yarn.lock
+package-lock.json
