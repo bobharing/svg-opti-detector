@@ -1,7 +1,7 @@
 {
   "name": "svg-opti-detector",
   "version": "1.0.0",
-  "description": "A powerful Node.js tool to analyze, optimize, and detect duplicate inline SVGs in HTML from URLs or local files. Provides detailed optimization reports with color-coded output and potential file size savings.",
+  "description": "A powerful tool to analyze, optimize, and detect duplicate inline SVGs in HTML from URLs or local files. Provides detailed optimization reports with color-coded output and potential file size savings.",
   "main": "svg-opti-detector.js",
   "bin": {
     "svg-opti-detector": "./svg-opti-detector.js"
