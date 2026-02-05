@@ -1,4 +1,4 @@
-#!/usr/bin/env node
+#!/usr/bin/env bun
 
 const cheerio = require('cheerio');
 const { optimize } = require('svgo');

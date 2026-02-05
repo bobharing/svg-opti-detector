@@ -206,7 +206,7 @@ describe('SVG Opti Detector', () => {
 
       // Mock console.warn to avoid test output pollution
       const originalWarn = console.warn;
-      console.warn = jest.fn();
+      console.warn = () => {};
 
       const results = await processSvgBatch(svgBatch, 0);
 
