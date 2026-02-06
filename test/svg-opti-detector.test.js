@@ -7,11 +7,9 @@ import {
   processSvgBatch,
   analyzeSvgs
 } from '../svg-opti-detector.js';
-import { join, dirname } from 'path';
-import { fileURLToPath } from 'url';
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
+// Bun provides import.meta.dir directly - no need for fileURLToPath or path.join
+const __dirname = import.meta.dir;
 
 describe('SVG Opti Detector', () => {
   
@@ -279,7 +277,8 @@ describe('SVG Opti Detector', () => {
 
   describe('Integration tests with test files', () => {
     test('should process test HTML file', async () => {
-      const testFile = join(__dirname, 'test-svgs.html');
+      // Use template literal for path - Bun handles path separators correctly
+      const testFile = `${__dirname}/test-svgs.html`;
       
       // Check if test file exists, if not skip this test
       const file = Bun.file(testFile);

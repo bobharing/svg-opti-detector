@@ -3,7 +3,6 @@
 import { load } from 'cheerio';
 import { optimize } from 'svgo';
 import chalk from 'chalk';
-import { resolve } from 'path';
 
 // Performance optimization: Pre-configure SVGO with common optimizations
 const svgoConfig = {
@@ -38,7 +37,8 @@ async function fetchHtml(input) {
     if (filePath.startsWith('file://')) {
       filePath = filePath.replace('file://', '');
     }
-    filePath = resolve(filePath);
+    // Use Bun's native path resolution
+    filePath = Bun.resolveSync(filePath, process.cwd());
     console.log(chalk.green('Reading local file:'), filePath);
     return await Bun.file(filePath).text();
   }
