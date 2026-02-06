@@ -1,14 +1,17 @@
-const {
+import { describe, test, expect } from "bun:test";
+import {
   extractInlineSvgs,
   hashSvg,
   generateIdentifierString,
   formatBytes,
   processSvgBatch,
   analyzeSvgs
-} = require('../svg-opti-detector');
+} from '../svg-opti-detector.js';
+import { join, dirname } from 'path';
+import { fileURLToPath } from 'url';
 
-const fs = require('fs');
-const path = require('path');
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
 
 describe('SVG Opti Detector', () => {
   
@@ -276,15 +279,16 @@ describe('SVG Opti Detector', () => {
 
   describe('Integration tests with test files', () => {
     test('should process test HTML file', async () => {
-      const testFile = path.join(__dirname, 'test-svgs.html');
+      const testFile = join(__dirname, 'test-svgs.html');
       
       // Check if test file exists, if not skip this test
-      if (!fs.existsSync(testFile)) {
+      const file = Bun.file(testFile);
+      if (!(await file.exists())) {
         console.log('Test HTML file not found, skipping integration test');
         return;
       }
 
-      const html = fs.readFileSync(testFile, 'utf8');
+      const html = await file.text();
       const svgs = extractInlineSvgs(html);
       
       expect(Array.isArray(svgs)).toBe(true);

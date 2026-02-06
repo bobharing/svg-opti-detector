@@ -1,27 +1,9 @@
 #!/usr/bin/env bun
 
-const cheerio = require('cheerio');
-const { optimize } = require('svgo');
-const crypto = require('crypto');
-const fs = require('fs');
-const path = require('path');
-
-// Chalk fallback implementation
-let chalk;
-try {
-  chalk = require('chalk');
-} catch (error) {
-  // Fallback if chalk is not available
-  const noColor = (text) => text;
-  chalk = {
-    blue: { bold: noColor },
-    green: noColor,
-    cyan: noColor,
-    yellow: noColor,
-    red: Object.assign(noColor, { bold: noColor }),
-    gray: noColor
-  };
-}
+import { load } from 'cheerio';
+import { optimize } from 'svgo';
+import chalk from 'chalk';
+import { resolve } from 'path';
 
 // Performance optimization: Pre-configure SVGO with common optimizations
 const svgoConfig = {
@@ -37,6 +19,11 @@ const svgoConfig = {
 
 console.log(chalk.blue.bold('🔍 SVG Opti Detector script started.\n'));
 
+/**
+ * Fetches HTML from a URL or local file path
+ * @param {string} input - URL or file path
+ * @returns {Promise<string>} HTML content
+ */
 async function fetchHtml(input) {
   // Improved detection: treat anything not starting with http:// or https:// as a file
   if (/^https?:\/\//i.test(input)) {
@@ -51,14 +38,34 @@ async function fetchHtml(input) {
     if (filePath.startsWith('file://')) {
       filePath = filePath.replace('file://', '');
     }
-    filePath = path.resolve(filePath);
+    filePath = resolve(filePath);
     console.log(chalk.green('Reading local file:'), filePath);
-    return fs.readFileSync(filePath, 'utf8');
+    return await Bun.file(filePath).text();
   }
 }
 
+/**
+ * @typedef {Object} SvgAttributes
+ * @property {string|null} class
+ * @property {string|null} id
+ * @property {string|null} width
+ * @property {string|null} height
+ * @property {string|null} viewBox
+ */
+
+/**
+ * @typedef {Object} SvgData
+ * @property {string} html
+ * @property {SvgAttributes} attributes
+ */
+
+/**
+ * Extracts inline SVGs from HTML
+ * @param {string} html - HTML content
+ * @returns {SvgData[]} Array of SVG data
+ */
 function extractInlineSvgs(html) {
-  const $ = cheerio.load(html, {
+  const $ = load(html, {
     // Performance optimization: Disable unnecessary parsing features
     xmlMode: false,
     decodeEntities: false,
@@ -92,24 +99,47 @@ function extractInlineSvgs(html) {
   return svgs;
 }
 
-// Performance optimization: Use faster hashing
+// Performance optimization: Use Bun's faster hashing
+/**
+ * Generates a hash for an SVG, ignoring class attributes
+ * @param {string} svg - SVG HTML string
+ * @returns {string} MD5 hash
+ */
 function hashSvg(svg) {
   // Normalize SVG content by removing class attributes for duplicate detection
   // This allows identical SVGs with different classes to be detected as duplicates
   const normalizedSvg = svg.replace(/\s+class="[^"]*"/g, '').replace(/\s+class='[^']*'/g, '');
-  return crypto.createHash('md5').update(normalizedSvg).digest('hex');
+  const hasher = new Bun.CryptoHasher('md5');
+  hasher.update(normalizedSvg);
+  return hasher.digest('hex');
 }
 
 // Performance optimization: Process SVGs in parallel with controlled concurrency
+/**
+ * @typedef {Object} SvgProcessResult
+ * @property {number} index
+ * @property {number} originalSize
+ * @property {number} optimizedSize
+ * @property {string} hash
+ * @property {boolean} isDuplicate
+ */
+
+/**
+ * Process a batch of SVGs in parallel
+ * @param {SvgData[]} svgBatch - Batch of SVGs to process
+ * @param {number} startIndex - Starting index for this batch
+ * @returns {Promise<SvgProcessResult[]>} Processing results
+ */
 async function processSvgBatch(svgBatch, startIndex) {
-  const results = await Promise.all(
+  const encoder = new TextEncoder();
+  return await Promise.all(
     svgBatch.map(async (svg, batchIndex) => {
       const index = startIndex + batchIndex;
-      const originalSize = Buffer.byteLength(svg.html, 'utf8');
+      const originalSize = encoder.encode(svg.html).length;
       
       try {
         const optimized = optimize(svg.html, svgoConfig);
-        const optimizedSize = Buffer.byteLength(optimized.data, 'utf8');
+        const optimizedSize = encoder.encode(optimized.data).length;
         const hash = hashSvg(svg.html);
         
         return {
@@ -132,10 +162,21 @@ async function processSvgBatch(svgBatch, startIndex) {
       }
     })
   );
-  
-  return results;
 }
 
+/**
+ * @typedef {Object} AnalysisResult
+ * @property {number} totalOriginalSize
+ * @property {number} totalOptimizedSize
+ * @property {SvgProcessResult[]} svgStats
+ * @property {Object.<string, number[]>} duplicates
+ */
+
+/**
+ * Analyzes a collection of SVGs for optimization and duplicates
+ * @param {SvgData[]} svgs - Array of SVG data
+ * @returns {Promise<AnalysisResult>} Analysis results
+ */
 async function analyzeSvgs(svgs) {
   let totalOriginalSize = 0;
   let totalOptimizedSize = 0;
@@ -143,8 +184,8 @@ async function analyzeSvgs(svgs) {
   const hashMap = new Map(); // Performance optimization: Use Map instead of object
   const duplicates = {};
   
-  // Performance optimization: Process SVGs in batches of 10 for controlled concurrency
-  const batchSize = 10;
+  // Performance optimization: Process SVGs in batches of 50 (Bun handles concurrency better than Node)
+  const batchSize = 50;
   const batches = [];
   
   for (let i = 0; i < svgs.length; i += batchSize) {
@@ -197,6 +238,11 @@ async function analyzeSvgs(svgs) {
 }
 
 // Performance optimization: Cache attribute string generation
+/**
+ * Generates an identifier string from SVG attributes
+ * @param {SvgAttributes} attrs - SVG attributes
+ * @returns {string} Formatted identifier string
+ */
 function generateIdentifierString(attrs) {
   const identifiers = [];
   
@@ -210,6 +256,11 @@ function generateIdentifierString(attrs) {
 }
 
 // Helper function to format bytes with appropriate units
+/**
+ * Formats byte count into human-readable string
+ * @param {number} bytes - Number of bytes
+ * @returns {string} Formatted string (e.g., "1.50 KB (1536 bytes)")
+ */
 function formatBytes(bytes) {
   if (bytes >= 1024 * 1024) {
     return `${(bytes / (1024 * 1024)).toFixed(2)} MB (${bytes} bytes)`;
@@ -272,8 +323,7 @@ async function main() {
     // Performance optimization: Pre-calculate all identifier strings
     const identifierStrings = svgs.map(svg => generateIdentifierString(svg.attributes));
     
-    displayOrder.forEach((originalIdx, displayIdx) => {
-      const svg = svgs[originalIdx];
+    displayOrder.forEach((originalIdx) => {
       const identifierStr = identifierStrings[originalIdx];
       const originalSize = result.svgStats[originalIdx].originalSize;
       const optimizedSize = result.svgStats[originalIdx].optimizedSize;
@@ -310,7 +360,7 @@ async function main() {
       let totalDuplicateOptimizedSavings = 0;
       let duplicateGroupCount = 0;
       
-      for (const [hash, indices] of Object.entries(result.duplicates)) {
+      for (const [, indices] of Object.entries(result.duplicates)) {
         duplicateGroupCount++;
         
         // Get classes for the duplicate group
@@ -390,7 +440,7 @@ async function main() {
     const totalSavingsPercent = ((totalSavings / result.totalOriginalSize) * 100).toFixed(1);
     
     if (totalSavings > 0) {
-      console.log(chalk.green(`Total potential savings: ${formatBytes(totalSavings)}`));
+      console.log(chalk.green(`Total potential savings: ${formatBytes(totalSavings)} (${totalSavingsPercent}%)`));
     }
     
     // Performance timing
@@ -404,7 +454,7 @@ async function main() {
 }
 
 // Export functions for testing
-module.exports = {
+export {
   fetchHtml,
   extractInlineSvgs,
   hashSvg,
@@ -416,6 +466,7 @@ module.exports = {
 };
 
 // Only run main if this file is executed directly
-if (require.main === module) {
+// Bun-specific main module detection
+if (import.meta.main) {
   main().catch(console.error);
 }
