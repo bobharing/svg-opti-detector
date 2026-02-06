@@ -18,13 +18,13 @@ A powerful command-line tool that analyzes HTML files for SVG optimization oppor
 ### Global Installation (Recommended)
 
 ```bash
-pnpm install -g svg-opti-detector
+bun install -g svg-opti-detector
 ```
 
 ### Local Installation
 
 ```bash
-pnpm install svg-opti-detector
+bun install svg-opti-detector
 ```
 
 ### From Source
@@ -32,7 +32,7 @@ pnpm install svg-opti-detector
 ```bash
 git clone https://github.com/bobharing/svg-opti-detector.git
 cd svg-opti-detector
-pnpm install
+bun install
 ```
 
 ## Usage
@@ -78,23 +78,23 @@ svg-opti-detector https://example.com
 svg-opti-detector https://example.com --duplicates
 ```
 
-#### Using NPM Scripts (Development)
+#### Using Bun Scripts (Development)
 
 ```bash
 # Run basic demo
-npm run demo
+bun run demo
 
 # Run demo with duplicate detection
-npm run demo:duplicates
+bun run demo:duplicates
 
 # Run unit tests
-npm test
+bun test
 
 # Run tests with coverage
-npm run test:coverage
+bun test --coverage
 
 # Run tests in watch mode
-npm run test:watch
+bun test --watch
 ```
 
 ## Output Explanation
@@ -141,7 +141,7 @@ Final optimized & deduplicated size: 1.84 KB (1888 bytes)
 
 ## API Usage (Programmatic)
 
-You can also use SVG Opti Detector programmatically in your Node.js applications:
+You can also use SVG Opti Detector programmatically in your Bun or Node.js applications:
 
 ```javascript
 const {
@@ -192,7 +192,7 @@ The tool uses [SVGO](https://github.com/svg/svgo) with optimized settings to:
 
 ## Requirements
 
-- **Node.js**: >=16.0.0
+- **Bun**: >=1.0.0
 - **Dependencies**: cheerio, svgo, chalk (automatically installed)
 
 ## Development
@@ -201,13 +201,13 @@ The tool uses [SVGO](https://github.com/svg/svgo) with optimized settings to:
 
 ```bash
 # Run all tests
-npm test
+bun test
 
 # Run with coverage
-npm run test:coverage
+bun test --coverage
 
 # Watch mode for development
-npm run test:watch
+bun test --watch
 ```
 
 ### Test Coverage
@@ -226,7 +226,7 @@ The project includes comprehensive unit tests covering:
 1. Fork the repository
 2. Create a feature branch (`git checkout -b feature/amazing-feature`)
 3. Make your changes and add tests
-4. Run tests (`npm test`)
+4. Run tests (`bun test`)
 5. Commit your changes (`git commit -m 'Add amazing feature'`)
 6. Push to the branch (`git push origin feature/amazing-feature`)
 7. Open a Pull Request
