@@ -11,19 +11,19 @@
     "readme.md",
     "LICENSE"
   ],
-  "packageManager": "pnpm@10.0.0",
+  "packageManager": "bun@1.0.0",
   "engines": {
     "node": ">=24.0.0"
   },
   "scripts": {
-    "preinstall": "npx only-allow pnpm",
+    "preinstall": "npx only-allow bun",
     "start": "node svg-opti-detector.js",
-    "test": "jest",
-    "test:watch": "jest --watch",
-    "test:coverage": "jest --coverage",
+    "test": "bun test",
+    "test:watch": "bun test --watch",
+    "test:coverage": "bun test --coverage",
     "demo": "node svg-opti-detector.js test/test-svgs-with-classes.html",
     "demo:duplicates": "node svg-opti-detector.js test/test-svgs-with-classes.html --duplicates",
-    "prepublishOnly": "pnpm test",
+    "prepublishOnly": "bun test",
     "publish:patch": "npm version patch && npm publish",
     "publish:minor": "npm version minor && npm publish",
     "publish:major": "npm version major && npm publish"
@@ -58,8 +58,6 @@
     "cheerio": "^1.1.2",
     "svgo": "^4.0.0"
   },
-  "devDependencies": {
-    "jest": "^30.2.0"
-  },
+  "devDependencies": {},
   "preferGlobal": true
 }
