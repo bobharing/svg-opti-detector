@@ -3,12 +3,12 @@
   "version": "1.0.0",
   "type": "module",
   "description": "A powerful tool to analyze, optimize, and detect duplicate inline SVGs in HTML from URLs or local files. Provides detailed optimization reports with color-coded output and potential file size savings.",
-  "main": "svg-opti-detector.js",
+  "main": "src/index.ts",
   "bin": {
-    "svg-opti-detector": "./svg-opti-detector.js"
+    "svg-opti-detector": "./src/index.ts"
   },
   "files": [
-    "svg-opti-detector.js",
+    "src",
     "readme.md",
     "LICENSE"
   ],
@@ -17,14 +17,14 @@
     "bun": ">=1.0.0"
   },
   "scripts": {
-    "start": "bun run svg-opti-detector.js",
+    "start": "bun run src/index.ts",
     "test": "bun test",
     "test:watch": "bun test --watch",
     "test:coverage": "bun test --coverage",
     "test:ui": "bun test --bail",
     "bench": "bun test --bench",
-    "demo": "bun run svg-opti-detector.js test/test-svgs-with-classes.html",
-    "demo:duplicates": "bun run svg-opti-detector.js test/test-svgs-with-classes.html --duplicates",
+    "demo": "bun run src/index.ts test/test-svgs-with-classes.html",
+    "demo:duplicates": "bun run src/index.ts test/test-svgs-with-classes.html --duplicates",
     "prepublishOnly": "bun test",
     "publish:patch": "npm version patch && npm publish",
     "publish:minor": "npm version minor && npm publish",
