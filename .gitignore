@@ -46,3 +46,9 @@ coverage/
 
 # Yarn Integrity file
 .yarn-integrity
+
+# Build outputs
+dist/
+svg-opti-detector
+svg-opti-detector.exe
+*.exe

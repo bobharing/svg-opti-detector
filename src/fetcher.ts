@@ -1,4 +1,5 @@
 ﻿import chalk from 'chalk';
+import { resolve } from 'path';
 
 /**
  * Fetches HTML from a URL or local file path
@@ -19,8 +20,9 @@ export async function fetchHtml(input: string): Promise<string> {
     if (filePath.startsWith('file://')) {
       filePath = filePath.replace('file://', '');
     }
-    // Use Bun's native path resolution
-    filePath = Bun.resolveSync(filePath, process.cwd());
+    // Resolve relative paths from current working directory
+    // This works in both regular scripts and compiled executables
+    filePath = resolve(process.cwd(), filePath);
     console.log(chalk.green('Reading local file:'), filePath);
     return await Bun.file(filePath).text();
   }
