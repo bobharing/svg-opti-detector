@@ -12,6 +12,7 @@ A powerful command-line tool that analyzes HTML files for SVG optimization oppor
 - ⚡ Performance-optimized batch processing
 - 🎨 Color-coded output with optimization recommendations
 - 📱 Support for URLs and local files
+- 🤖 MCP server with 3-step tool workflow for AI agent integration
 
 ## Installation
 
@@ -162,6 +163,137 @@ async function analyzePage(html) {
   
   return results;
 }
+```
+
+## MCP Server (AI Agent Integration)
+
+SVG Opti Detector includes a [Model Context Protocol](https://modelcontextprotocol.io) (MCP) server that exposes its analysis capabilities as tools for AI agents. The server supports both **stdio** and **HTTP** transports.
+
+### Running the MCP Server
+
+```bash
+# stdio transport (default) — used by VS Code, Claude Desktop, and local MCP clients
+bun run mcp
+
+# HTTP transport — serves multiple clients over HTTP
+bun run mcp:http
+
+# HTTP transport with custom port (default: 3100)
+MCP_PORT=8080 bun run mcp:http
+```
+
+### Building MCP Executables
+
+```bash
+# Build for current platform
+bun run build:mcp
+
+# Build for all platforms
+bun run build:mcp:all
+```
+
+### MCP Client Configuration
+
+#### VS Code (stdio)
+
+Add to your VS Code `settings.json` or `.vscode/mcp.json`:
+
+```json
+{
+  "mcp": {
+    "servers": {
+      "svg-opti-detector": {
+        "command": "bun",
+        "args": ["run", "mcp"],
+        "cwd": "/path/to/svg-opti-detector"
+      }
+    }
+  }
+}
+```
+
+#### Claude Desktop (stdio)
+
+Add to your Claude Desktop config (`claude_desktop_config.json`):
+
+```json
+{
+  "mcpServers": {
+    "svg-opti-detector": {
+      "command": "bun",
+      "args": ["run", "--cwd", "/path/to/svg-opti-detector", "mcp"]
+    }
+  }
+}
+```
+
+#### HTTP Transport
+
+For any MCP client that supports HTTP/Streamable HTTP:
+
+```json
+{
+  "mcpServers": {
+    "svg-opti-detector": {
+      "url": "http://localhost:3100/mcp"
+    }
+  }
+}
+```
+
+Start the server first with `bun run mcp:http`, then configure the client to connect. A `/health` endpoint is also available at `http://localhost:3100/health`.
+
+### MCP Tools
+
+The server exposes three tools designed for a step-by-step workflow:
+
+#### Step 1 — `svg_scan` (Discovery)
+
+Scan a URL or HTML and return a **bounded summary**: total SVG count, number of unoptimized SVGs, duplicate group count, top 5 worst offenders, and top 5 duplicate groups. Output size is constant regardless of page complexity — always call this first.
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `url` | string | URL or absolute file path to scan |
+| `html` | string | Raw HTML string (max 5 MB) |
+| `threshold` | number | Minimum savings % to flag as unoptimized (default: 5) |
+
+#### Step 2 — `svg_list` (Enumeration)
+
+Returns a **paginated, filterable** list of unoptimized SVGs or duplicate groups. Use after `svg_scan` to drill into specific categories.
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `url` | string | Same source used in `svg_scan` |
+| `html` | string | Same source used in `svg_scan` |
+| `threshold` | number | Minimum savings % (default: 5) |
+| `type` | `"unoptimized"` \| `"duplicates"` \| `"all"` | Category to list (default: `"all"`) |
+| `minSavingsPercent` | number | Only include SVGs saving ≥ this % |
+| `minOriginalSize` | number | Only include SVGs ≥ this size in bytes |
+| `limit` | number | Items per page (default: 20, max: 100) |
+| `offset` | number | Items to skip for pagination (default: 0) |
+
+#### Step 3 — `svg_get_optimized` (Retrieval)
+
+Get the actual **optimized SVG markup** for specific indices from `svg_list`, or optimize a raw SVG string directly.
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `url` | string | Same source used in `svg_scan` / `svg_list` |
+| `html` | string | Same source used in `svg_scan` / `svg_list` |
+| `svg` | string | Single raw SVG string to optimize directly (max 1 MB) |
+| `indices` | number[] | SVG indices to retrieve (always provide this to avoid large output) |
+
+### Example Agent Workflow
+
+```
+1. svg_scan(url: "https://example.com")
+   → "42 SVGs found, 18 unoptimized, 6 duplicate groups, top offender saves 45%"
+
+2. svg_list(url: "https://example.com", type: "unoptimized", minSavingsPercent: 20, limit: 10)
+   → paginated list of high-impact SVGs with indices
+
+3. svg_get_optimized(url: "https://example.com", indices: [2, 7, 23])
+   → original + optimized SVG markup for those specific indices
 ```
 
 ### Available Functions
