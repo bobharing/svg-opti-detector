@@ -13,54 +13,60 @@ function createMcpServer(): McpServer {
     version: '1.0.0'
   });
 
-  server.tool(
+  server.registerTool(
     'svg_scan',
-    'Scan a URL or local HTML file for unoptimized and duplicate inline SVGs. ' +
-      'Returns a compact summary with indices, identifiers, sizes, and savings potential — no SVG markup. ' +
-      'Use svg_get_optimized to retrieve the actual optimized SVG content for specific indices. ' +
-      'Accepts a URL (https://...), absolute file path (/path/to/file.html), ' +
-      'or raw HTML string via the html parameter. ' +
-      'Note: duplicate detection ignores class attributes — SVGs identical except for class names are treated as duplicates.',
     {
-      url: z
-        .string()
-        .optional()
-        .describe('URL or absolute file path to scan (provide url or html, not both)'),
-      html: z
-        .string()
-        .optional()
-        .describe('Raw HTML string to scan directly (max 5 MB; provide url or html, not both)'),
-      threshold: z
-        .number()
-        .optional()
-        .describe('Minimum savings percentage to flag an SVG as unoptimized (default: 5)')
+      description:
+        'Scan a URL or local HTML file for unoptimized and duplicate inline SVGs. ' +
+        'Returns a compact summary with indices, identifiers, sizes, and savings potential — no SVG markup. ' +
+        'Use svg_get_optimized to retrieve the actual optimized SVG content for specific indices. ' +
+        'Accepts a URL (https://...), absolute file path (/path/to/file.html), ' +
+        'or raw HTML string via the html parameter. ' +
+        'Note: duplicate detection ignores class attributes — SVGs identical except for class names are treated as duplicates.',
+      inputSchema: {
+        url: z
+          .string()
+          .optional()
+          .describe('URL or absolute file path to scan (provide url or html, not both)'),
+        html: z
+          .string()
+          .optional()
+          .describe('Raw HTML string to scan directly (max 5 MB; provide url or html, not both)'),
+        threshold: z
+          .number()
+          .optional()
+          .describe('Minimum savings percentage to flag an SVG as unoptimized (default: 5)')
+      }
     },
     async ({ url, html, threshold }) => handleScan({ url, html, threshold })
   );
 
-  server.tool(
+  server.registerTool(
     'svg_get_optimized',
-    'Get optimized SVG content for specific SVGs. ' +
-      'Pass indices from a previous svg_scan result to retrieve those SVGs, ' +
-      'or provide raw SVG markup directly via the svg parameter. ' +
-      'Returns original and optimized SVG pairs with size savings. ' +
-      'Use svg_scan first to identify which SVGs need optimization and their indices.',
     {
-      url: z
-        .string()
-        .optional()
-        .describe('URL or absolute file path (same source used in svg_scan)'),
-      html: z
-        .string()
-        .optional()
-        .describe('Raw HTML string (same source used in svg_scan; max 5 MB)'),
-      svg: z.string().optional().describe('Single raw SVG string to optimize directly (max 1 MB)'),
-      indices: z
-        .array(z.number())
-        .optional()
-        .describe(
-          'Specific SVG indices to retrieve (from svg_scan results). Omit to return all SVGs.'
-        )
+      description:
+        'Get optimized SVG content for specific SVGs. ' +
+        'Pass indices from a previous svg_scan result to retrieve those SVGs, ' +
+        'or provide raw SVG markup directly via the svg parameter. ' +
+        'Returns original and optimized SVG pairs with size savings. ' +
+        'Use svg_scan first to identify which SVGs need optimization and their indices.',
+      inputSchema: {
+        url: z
+          .string()
+          .optional()
+          .describe('URL or absolute file path (same source used in svg_scan)'),
+        html: z
+          .string()
+          .optional()
+          .describe('Raw HTML string (same source used in svg_scan; max 5 MB)'),
+        svg: z.string().optional().describe('Single raw SVG string to optimize directly (max 1 MB)'),
+        indices: z
+          .array(z.number())
+          .optional()
+          .describe(
+            'Specific SVG indices to retrieve (from svg_scan results). Omit to return all SVGs.'
+          )
+      }
     },
     async ({ url, html, svg, indices }) => handleGetOptimized({ url, html, svg, indices })
   );
