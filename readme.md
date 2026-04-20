@@ -221,6 +221,71 @@ The project includes comprehensive unit tests covering:
 - Error handling and edge cases
 - Integration tests with real HTML files
 
+### Building Executables
+
+You can build standalone executables that bundle the Bun runtime and all dependencies into a single binary file.
+
+#### Build for Current Platform
+
+```bash
+# Build an optimized executable for your current platform
+bun run build
+```
+
+This creates an executable named `svg-opti-detector` (or `svg-opti-detector.exe` on Windows) in the project root.
+
+#### Build for Specific Platforms
+
+```bash
+# Windows (x64)
+bun run build:win
+
+# Linux (x64)
+bun run build:linux
+
+# macOS (Apple Silicon)
+bun run build:macos
+
+# macOS (Intel)
+bun run build:macos-intel
+
+# Build for all platforms
+bun run build:all
+```
+
+All platform-specific builds are output to the `dist/` directory:
+- `dist/svg-opti-detector-win.exe` - Windows executable
+- `dist/svg-opti-detector-linux` - Linux executable
+- `dist/svg-opti-detector-macos` - macOS (ARM) executable
+- `dist/svg-opti-detector-macos-intel` - macOS (Intel) executable
+
+#### Using the Executable
+
+Once built, you can run the executable directly without needing Bun installed:
+
+```bash
+# On Windows
+.\svg-opti-detector.exe https://example.com --duplicates
+
+# On Linux/macOS
+chmod +x svg-opti-detector
+./svg-opti-detector https://example.com --duplicates
+```
+
+#### Build Optimizations
+
+The build process includes several optimizations:
+- **Minification**: Reduces code size
+- **Sourcemap**: Enables proper stack traces
+- **Bytecode compilation**: Improves startup time by 2x
+- **Bundling**: All dependencies are embedded
+
+The executables are typically 60-80MB in size due to the bundled Bun runtime, but they:
+- Run without any external dependencies
+- Work on systems without Bun installed
+- Have faster startup times than regular scripts
+- Are fully portable
+
 ## Contributing
 
 1. Fork the repository
