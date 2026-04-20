@@ -2,12 +2,12 @@
 import {
   extractInlineSvgs,
   hashSvg,
-  generateIdentifierString,
+  generateIdentifier,
   formatBytes,
   processSvgBatch,
   analyzeSvgs
-} from '../src/index';
-import type { SvgData } from '../src/types';
+} from '../src/core';
+import type { SvgData } from '../src/core/types';
 
 // Bun provides import.meta.dir directly
 const __dirname = import.meta.dir;
@@ -95,7 +95,7 @@ describe('SVG Opti Detector', () => {
     });
   });
 
-  describe('generateIdentifierString', () => {
+  describe('generateIdentifier', () => {
     test('should generate identifier string with all attributes', () => {
       const attrs = {
         class: 'icon',
@@ -105,7 +105,7 @@ describe('SVG Opti Detector', () => {
         viewBox: '0 0 24 24'
       };
       
-      const result = generateIdentifierString(attrs);
+      const result = generateIdentifier(attrs);
       
       expect(result).toContain('class="icon"');
       expect(result).toContain('id="my-svg"');
@@ -123,7 +123,7 @@ describe('SVG Opti Detector', () => {
         viewBox: null
       };
       
-      const result = generateIdentifierString(attrs);
+      const result = generateIdentifier(attrs);
       
       expect(result).toContain('class="icon"');
       expect(result).toContain('width="24"');
@@ -141,7 +141,7 @@ describe('SVG Opti Detector', () => {
         viewBox: null
       };
       
-      const result = generateIdentifierString(attrs);
+      const result = generateIdentifier(attrs);
       
       expect(result).toBe('');
     });
