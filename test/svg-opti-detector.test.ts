@@ -1,4 +1,4 @@
-import { describe, test, expect } from "bun:test";
+﻿import { describe, test, expect } from "bun:test";
 import {
   extractInlineSvgs,
   hashSvg,
@@ -6,9 +6,10 @@ import {
   formatBytes,
   processSvgBatch,
   analyzeSvgs
-} from '../svg-opti-detector.js';
+} from '../src/index';
+import type { SvgData } from '../src/types';
 
-// Bun provides import.meta.dir directly - no need for fileURLToPath or path.join
+// Bun provides import.meta.dir directly
 const __dirname = import.meta.dir;
 
 describe('SVG Opti Detector', () => {
@@ -171,7 +172,7 @@ describe('SVG Opti Detector', () => {
 
   describe('processSvgBatch', () => {
     test('should process a batch of SVGs', async () => {
-      const svgBatch = [
+      const svgBatch: SvgData[] = [
         {
           html: '<svg><circle cx="10" cy="10" r="5"/></svg>',
           attributes: { class: null, id: null, width: null, height: null, viewBox: null }
@@ -198,7 +199,7 @@ describe('SVG Opti Detector', () => {
     });
 
     test('should handle SVG optimization errors gracefully', async () => {
-      const svgBatch = [
+      const svgBatch: SvgData[] = [
         {
           html: '<invalid-svg>not valid</invalid-svg>',
           attributes: { class: null, id: null, width: null, height: null, viewBox: null }
@@ -220,7 +221,7 @@ describe('SVG Opti Detector', () => {
 
   describe('analyzeSvgs', () => {
     test('should analyze SVGs and detect duplicates', async () => {
-      const svgs = [
+      const svgs: SvgData[] = [
         {
           html: '<svg><circle cx="10" cy="10" r="5"/></svg>',
           attributes: { class: 'icon-1', id: null, width: null, height: null, viewBox: null }
@@ -261,8 +262,8 @@ describe('SVG Opti Detector', () => {
     });
 
     test('should process large batches correctly', async () => {
-      // Create 25 SVGs to test batch processing (batch size is 10)
-      const svgs = Array.from({ length: 25 }, (_, i) => ({
+      // Create 25 SVGs to test batch processing (batch size is 50)
+      const svgs: SvgData[] = Array.from({ length: 25 }, (_, i) => ({
         html: `<svg><circle cx="${i}" cy="${i}" r="5"/></svg>`,
         attributes: { class: `icon-${i}`, id: null, width: null, height: null, viewBox: null }
       }));

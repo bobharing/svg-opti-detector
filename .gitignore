@@ -3,6 +3,7 @@ node_modules/
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+bun.lockb
 
 # Environment variables
 .env
@@ -45,3 +46,9 @@ coverage/
 
 # Yarn Integrity file
 .yarn-integrity
+
+# Build outputs
+dist/
+svg-opti-detector
+svg-opti-detector.exe
+*.exe

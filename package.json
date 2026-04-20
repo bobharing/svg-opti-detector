@@ -1,29 +1,37 @@
 {
   "name": "svg-opti-detector",
   "version": "1.0.0",
-  "description": "A powerful Node.js tool to analyze, optimize, and detect duplicate inline SVGs in HTML from URLs or local files. Provides detailed optimization reports with color-coded output and potential file size savings.",
-  "main": "svg-opti-detector.js",
+  "type": "module",
+  "description": "A powerful tool to analyze, optimize, and detect duplicate inline SVGs in HTML from URLs or local files. Provides detailed optimization reports with color-coded output and potential file size savings.",
+  "main": "src/index.ts",
   "bin": {
-    "svg-opti-detector": "./svg-opti-detector.js"
+    "svg-opti-detector": "./src/index.ts"
   },
   "files": [
-    "svg-opti-detector.js",
+    "src",
     "readme.md",
     "LICENSE"
   ],
-  "packageManager": "pnpm@10.0.0",
+  "packageManager": "bun@1.3.8",
   "engines": {
-    "node": ">=24.0.0"
+    "bun": ">=1.0.0"
   },
   "scripts": {
-    "preinstall": "npx only-allow pnpm",
-    "start": "node svg-opti-detector.js",
-    "test": "jest",
-    "test:watch": "jest --watch",
-    "test:coverage": "jest --coverage",
-    "demo": "node svg-opti-detector.js test/test-svgs-with-classes.html",
-    "demo:duplicates": "node svg-opti-detector.js test/test-svgs-with-classes.html --duplicates",
-    "prepublishOnly": "pnpm test",
+    "start": "bun run src/index.ts",
+    "test": "bun test",
+    "test:watch": "bun test --watch",
+    "test:coverage": "bun test --coverage",
+    "test:ui": "bun test --bail",
+    "bench": "bun test --bench",
+    "demo": "bun run src/index.ts test/test-svgs-with-classes.html",
+    "demo:duplicates": "bun run src/index.ts test/test-svgs-with-classes.html --duplicates",
+    "build": "bun build --compile --minify --sourcemap --bytecode ./src/index.ts --outfile svg-opti-detector",
+    "build:win": "bun build --compile --minify --sourcemap --bytecode --target=bun-windows-x64 ./src/index.ts --outfile dist/svg-opti-detector-win.exe",
+    "build:linux": "bun build --compile --minify --sourcemap --bytecode --target=bun-linux-x64 ./src/index.ts --outfile dist/svg-opti-detector-linux",
+    "build:macos": "bun build --compile --minify --sourcemap --bytecode --target=bun-darwin-arm64 ./src/index.ts --outfile dist/svg-opti-detector-macos",
+    "build:macos-intel": "bun build --compile --minify --sourcemap --bytecode --target=bun-darwin-x64 ./src/index.ts --outfile dist/svg-opti-detector-macos-intel",
+    "build:all": "bun run build:win && bun run build:linux && bun run build:macos && bun run build:macos-intel",
+    "prepublishOnly": "bun test",
     "publish:patch": "npm version patch && npm publish",
     "publish:minor": "npm version minor && npm publish",
     "publish:major": "npm version major && npm publish"
@@ -59,7 +67,7 @@
     "svgo": "^4.0.0"
   },
   "devDependencies": {
-    "jest": "^30.2.0"
+    "@types/bun": "latest"
   },
   "preferGlobal": true
 }
